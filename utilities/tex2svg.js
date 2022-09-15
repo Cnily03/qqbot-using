@@ -1,10 +1,12 @@
-var { mathjax } = require('mathjax-full/js/mathjax');
-var { TeX } = require('mathjax-full/js/input/tex');
+var { mathjax } = require('mathjax-full/js/mathjax')
+var { TeX } = require('mathjax-full/js/input/tex')
 var { FindTeX } = require("mathjax-full/js/input/tex/FindTeX")
-var { SVG } = require('mathjax-full/js/output/svg');
-var { LiteAdaptor } = require('mathjax-full/js/adaptors/liteAdaptor');
-var { RegisterHTMLHandler } = require('mathjax-full/js/handlers/html');
-var { AllPackages } = require('mathjax-full/js/input/tex/AllPackages');
+var { SVG } = require('mathjax-full/js/output/svg')
+var { LiteAdaptor } = require('mathjax-full/js/adaptors/liteAdaptor')
+var { RegisterHTMLHandler } = require('mathjax-full/js/handlers/html')
+var { AllPackages } = require('mathjax-full/js/input/tex/AllPackages')
+
+const CN_FONT_FAMILY = require("../config/math").cn_font_family
 
 // MathJax bootstrap
 const adaptor = new LiteAdaptor();
@@ -34,8 +36,10 @@ const html = mathjax.document('', {
 
 function tex2svg(equation, type = "display", color = "black") {
     const inline = type.trim() == "inline";
+    // console.log(adaptor.innerHTML(html.convert(equation, { display: !inline })))
     const svg = adaptor
         .innerHTML(html.convert(equation, { display: !inline }))
+        .replace(/font\-family\=\"serif\">/g, `font-family="${CN_FONT_FAMILY}">`)
         .replace(
             /(?<=<svg.+?>)/,
             `<style>*{fill: ${color};}</style>`
@@ -43,4 +47,4 @@ function tex2svg(equation, type = "display", color = "black") {
     return svg.includes('merror') ? svg.replace(/<rect.+?><\/rect>/, '') : svg;
 }
 
-module.exports = tex2svg;
+module.exports = tex2svg

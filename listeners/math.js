@@ -3,65 +3,16 @@ const oicq = require("oicq")
 // const Bot = require("../index")
 const listener = new osdk.Listener()
 // const crypto = require("../utilities/crypto")
-const sharp = require("sharp")
 
+const raw2tex = require("../utilities/raw2tex")
 const tex2svg = require("../utilities/tex2svg")
-const event_options = require("../config/options/math")
-
-const RESIZE = 3;
-
-function svg2imgbuf(svg, bg = { r: 255, g: 255, b: 255 }, resize_percent = 1) {
-    return new Promise((resolve, reject) => {
-        try {
-            const t = sharp(Buffer.from(svg))
-            t.metadata().then(metadata => {
-                // console.log(metadata);
-                t.resize({
-                    width: parseInt(metadata.width * RESIZE * resize_percent),
-                    height: parseInt(metadata.height * RESIZE * resize_percent),
-                }).flatten({
-                    background: bg
-                }).png().toBuffer().then(resolve)
-            })
-        } catch (e) { reject(e) }
-    })
-}
-
-function replaceStr(str, char, index) {
-    return str.slice(0, index) + char + str.slice(index + 1, str.length)
-}
+const svg2imgbuf = require("../utilities/svg2imgbuf")
+const event_options = require("../config/math").options
 
 listener.event("message", function (event) {
     var message = event.toString()
+    if (message.split("$").length < 2) return;
     const msgType = event.group_id ? "group" : (event.discuss_id ? "discuss" : "user")
-    const dollar_count = message.split("$$").length
-    if (dollar_count < 2) return;
-
-    // 处理公式
-    message = "$$" + message + "$$"
-    for (let i = 0; message.includes("$$"); i++) {
-        if (i % 2) {
-            message = message.replace(/\$\$/, "}")
-        } else { // 第奇数个 $$
-            for (let k = message.indexOf("$$") + 1; k < message.length && !(message[k] == "$" && message[k + 1] == "$"); k++) {
-                switch (message[k]) {
-                    case "\\": message = replaceStr(message, "\\\\", k); k++; break;
-                    case "{": message = replaceStr(message, "\\{", k); k++; break;
-                    case "}": message = replaceStr(message, "\\}", k); k++; break;
-                    case "#": message = replaceStr(message, "\\#", k); k++; break;
-                    case "%": message = replaceStr(message, "\\%", k); k++; break;
-                    case "&": message = replaceStr(message, "\\&", k); k++; break;
-                    case "^": message = replaceStr(message, "\\^{ }", k); k += 4; break;
-                    case "_": message = replaceStr(message, "\\_{ }", k); k += 4; break;
-                    case "~": message = replaceStr(message, "\\~{ }", k); k += 4; break;
-                    default: break;
-                }
-            }
-            message = message.replace(/\$\$/, "\\text{")
-        }
-    }
-    message = message.replace(/\\text\{\}/g, "")
-    if (message) message = `\\text{ }${message}\\text{ }`
 
     // set theme
     var theme = "light"
@@ -78,9 +29,11 @@ listener.event("message", function (event) {
     const resize_percent_user = getUserCfg(event.sender.user_id, "resize")
     resize_percent = resize_percent_user || resize_percent
 
+    // 处理公式
+    const equation = raw2tex(message);
     // handle picture
-    if (message.trim()) {
-        const svg = tex2svg(message, "display", theme == "light" ? "black" : "white")
+    if (equation.trim()) {
+        const svg = tex2svg(equation, "display", theme == "light" ? "black" : "white")
         svg2imgbuf(svg, bg, resize_percent).then(imgbuf => {
             const image = oicq.segment.image(imgbuf)
             event.reply(image)
@@ -95,11 +48,11 @@ listener.event("message", function (event) {
     const message = event.toString().trim()
     if (/^\/tex config theme( (dark|light)( (user|group|discuss))?)?$/.test(message)) {
         // tex theme
-        cfgCommand(message, event, "theme", "dark")
+        handleCfgCmd(message, event, "theme", "dark")
 
     } else if (/^\/tex config resize( [0-9\.]*( (user|group|discuss))?)?$/.test(message)) {
         // tex resize
-        cfgCommand(message, event, "resize", 1, true)
+        handleCfgCmd(message, event, "resize", 1, true)
 
     } else if (/^\/tex help$/.test(message)) {
         // tex help
@@ -155,7 +108,7 @@ function setUserCfg(user_id, settings, value) {
     return value;
 }
 
-function cfgCommand(message, event, cfg_name, default_val, isNumber = false) {
+function handleCfgCmd(message, event, cfg_name, default_val, isNumber = false) {
     const msgType = event.group_id ? "group" : (event.discuss_id ? "discuss" : "user")
     // query
     if (message == "/tex config " + cfg_name) {
