@@ -7,5 +7,5 @@ module.exports = {
             313882380  // 计算机四班
         ]
     },
-    cn_font_family: "Sarasa Gothic SC"
+    cn_font_family: "Sarasa Mono TC"
 }
