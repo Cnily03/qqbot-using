@@ -11,7 +11,10 @@ const event_options = require("../config/math").options
 
 listener.event("message", function (event) {
     var message = event.toString()
-    if (message.split("$").length < 2) return;
+    const dolloar_count = message.replace(/\\\$/g, "").split("$").length - 1
+    if (dolloar_count < 2) return;
+    const RETURN_MSG = "Syntax error. Please check your MathJax code.";
+    if (!dolloar_count % 2) return event.reply(RETURN_MSG)
     const msgType = event.group_id ? "group" : (event.discuss_id ? "discuss" : "user")
 
     // set theme
@@ -31,6 +34,7 @@ listener.event("message", function (event) {
 
     // 处理公式
     const equation = raw2tex(message);
+    if (equation.split("{").length != equation.split("}").length || !equation) return event.reply(RETURN_MSG)
     // handle picture
     if (equation.trim()) {
         const svg = tex2svg(equation, "display", theme == "light" ? "black" : "white")
@@ -61,7 +65,7 @@ listener.event("message", function (event) {
             "/tex config theme [<theme> [target]]",
             "/tex config resize [<number> [target]]"
         ].join("\n"))
-    } else if (/^\/tex/.test(message)) return event.reply('Syntax error, please try command "/tex help".')
+    } else if (/^\/tex/.test(message)) return event.reply('Syntax error. Please try command "/tex help".')
 }, {
     include: {
         group: event_options.group
