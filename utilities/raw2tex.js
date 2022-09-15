@@ -3,7 +3,7 @@ function replaceStr(str, char, index) {
 }
 
 function raw2tex(text) {
-    text = text.replace(/\r/g, "\n").replace(/\$\$/g, "\n$")
+    text = text.replace(/\r/g, "\n").replace(/\$\$/g, "\n$").trim()
     while (text.includes("\n\n")) {
         text = text.replace(/\n\n/g, "\n")
     }
