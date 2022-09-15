@@ -3,9 +3,9 @@ function replaceStr(str, char, index) {
 }
 
 function raw2tex(text) {
-    text = text.replace(/\$\$/g, "\r$")
-    while (text.includes("\r\r")) {
-        text = text.replace(/\r\r/g, "\r")
+    text = text.replace(/\r/g, "\n").replace(/\$\$/g, "\n$")
+    while (text.includes("\n\n")) {
+        text = text.replace(/\n\n/g, "\n")
     }
     text = `$${text}$`
     for (let i = 0; text.includes("$"); i++) {
@@ -14,7 +14,7 @@ function raw2tex(text) {
         } else {
             for (let k = text.indexOf("$") + 1; k < text.length && !(text[k] == "$"); k++) {
                 switch (text[k]) {
-                    case "\r": text = replaceStr(text, "}\\\\\\text{", k); k += 8; break;
+                    case "\n": text = replaceStr(text, "}\\\\\\text{", k); k += 8; break;
                     case "\\": text = replaceStr(text, "\\\\", k); k++; break;
                     case "{": text = replaceStr(text, "\\{", k); k++; break;
                     case "}": text = replaceStr(text, "\\}", k); k++; break;
