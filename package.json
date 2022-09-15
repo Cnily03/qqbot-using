@@ -1,0 +1,23 @@
+{
+  "name": "qqbot",
+  "version": "0.1.0",
+  "description": "QQ Bot for specific using",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node index.js"
+  },
+  "keywords": [
+    "QQ",
+    "Bot",
+    "chat"
+  ],
+  "author": "Jevon Wang",
+  "license": "MIT",
+  "dependencies": {
+    "mathjax-full": "^3.2.2",
+    "oicq": "^2.3.1",
+    "oicq-sdk": "^0.2.0",
+    "sharp": "^0.31.0"
+  }
+}
