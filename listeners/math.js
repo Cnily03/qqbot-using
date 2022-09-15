@@ -28,7 +28,7 @@ listener.event("message", function (event) {
     // set resize
     var resize_percent = 1
     if (msgType == "group") resize_percent = getGroupCfg(event.group_id, "resize") || 1
-    else if (msgType == "user") resize_percent = getDiscussCfg(event.discuss_id, "resize") || 1
+    else if (msgType == "discuss") resize_percent = getDiscussCfg(event.discuss_id, "resize") || 1
     const resize_percent_user = getUserCfg(event.sender.user_id, "resize")
     resize_percent = resize_percent_user || resize_percent
 
