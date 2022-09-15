@@ -15,7 +15,7 @@ function svg2imgbuf(svg, bg = { r: 255, g: 255, b: 255 }, resize_percent = 1) {
         try {
             const t = sharp(Buffer.from(svg))
             t.metadata().then(metadata => {
-                console.log(metadata);
+                // console.log(metadata);
                 t.resize({
                     width: parseInt(metadata.width * RESIZE * resize_percent),
                     height: parseInt(metadata.height * RESIZE * resize_percent),
@@ -32,7 +32,6 @@ function replaceStr(str, char, index) {
 }
 
 listener.event("message", function (event) {
-    console.log(CONFIG)
     var message = event.toString()
     const msgType = event.group_id ? "group" : (event.discuss_id ? "discuss" : "user")
     const dollar_count = message.split("$$").length
