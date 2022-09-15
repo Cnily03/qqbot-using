@@ -30,8 +30,8 @@ function raw2tex(text) {
             text = text.replace(/\$/, "\\text{")
         }
     }
-    text = text.replace(/ /g, "").replace(/\\text\{\}/g, "").trim()
-    if (text) text = `\\text{ }\\begin{array}{}${text}\\end{array}\\text{ }`
+    text = text.replace(/\\text\{\}/g, "").trim()
+    if (text.replace(/ /g, "")) text = `\\text{ }\\begin{array}{}${text}\\end{array}\\text{ }`
     return text;
 }
 module.exports = raw2tex
