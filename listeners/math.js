@@ -4,17 +4,41 @@ const oicq = require("oicq")
 const listener = new osdk.Listener()
 // const crypto = require("../utilities/crypto")
 
+const replayEvent = (_event_, _msg_, _quote_ = false) => {
+    try {
+        if (_event_.group_id && _event_.group.mute_left) return // be muted
+        return _event_.reply(_msg_, _quote_)
+    } catch (e) {
+        console.log(e)
+        return e
+    }
+}
+
 const raw2tex = require("../utilities/raw2tex")
 const tex2svg = require("../utilities/tex2svg")
 const svg2imgbuf = require("../utilities/svg2imgbuf")
 const event_options = require("../config/math").options
 
-listener.event("message", function (event) {
-    var message = event.toString()
-    const dolloar_count = message.replace(/\\\$/g, "").split("$").length - 1
-    if (dolloar_count < 2) return;
-    const RETURN_MSG = "Syntax error. Please check your MathJax code.";
-    if (!dolloar_count % 2) return event.reply(RETURN_MSG)
+listener.event("message", function (event) { // equation
+    const SYNTAX_ERROR_MSG = "Syntax error. Please check your MathJax code.";
+
+    var message = event.raw_message, message_backup = event.toString()
+
+    function isEquationValid(text) {
+        const dolloar_count = text.replace(/\\\$/g, "").split("$").length - 1
+        if (dolloar_count < 2) return -1 // not equation
+        if (!dolloar_count % 2) return 0 // syntax error
+        return 1;
+    }
+
+    let _error_1, _error_2
+    if ((_error_1 = isEquationValid(message)) > 0) { }
+    else {
+        if ((_error_2 = isEquationValid(message_backup)) > 0) message = message_backup
+        else if (message.length > message_backup.length ? _error_1 : _error_2) return
+        else return replayEvent(event, SYNTAX_ERROR_MSG)
+    }
+
     const msgType = event.group_id ? "group" : (event.discuss_id ? "discuss" : "user")
 
     // set theme
@@ -34,13 +58,14 @@ listener.event("message", function (event) {
 
     // 处理公式
     const equation = raw2tex(message);
-    if (equation.split("{").length != equation.split("}").length || !equation) return event.reply(RETURN_MSG)
+    if (equation.split("{").length != equation.split("}").length || !equation) return replayEvent(event, SYNTAX_ERROR_MSG)
     // handle picture
     if (equation.trim()) {
         const svg = tex2svg(equation, "display", theme == "light" ? "black" : "white")
+        if (svg === false) return replayEvent(event, SYNTAX_ERROR_MSG)
         svg2imgbuf(svg, bg, resize_percent).then(imgbuf => {
             const image = oicq.segment.image(imgbuf)
-            event.reply(image)
+            replayEvent(event, image)
         }).catch(e => console.log(e))
     }
 
@@ -48,7 +73,7 @@ listener.event("message", function (event) {
     include: {
         group: event_options.group
     }
-}).event("message", function (event) {
+}).event("message", function (event) { // command
     const message = event.toString().trim()
     if (/^\/tex config theme( (dark|light)( (user|group|discuss))?)?$/.test(message)) {
         // tex theme
@@ -60,12 +85,12 @@ listener.event("message", function (event) {
 
     } else if (/^\/tex help$/.test(message)) {
         // tex help
-        return event.reply([
+        return replayEvent(event, [
             "/tex help",
             "/tex config theme [<theme> [target]]",
             "/tex config resize [<number> [target]]"
         ].join("\n"))
-    } else if (/^\/tex/.test(message)) return event.reply('Syntax error. Please try command "/tex help".')
+    } else if (/^\/tex/.test(message)) return replayEvent(event, 'Syntax error. Please try command "/tex help".')
 }, {
     include: {
         group: event_options.group
@@ -121,7 +146,7 @@ function handleCfgCmd(message, event, cfg_name, default_val, isNumber = false) {
             "group": getGroupCfg(event.group_id, cfg_name) || default_val,
             "discuss": getDiscussCfg(event.discuss_id, cfg_name) || default_val
         }[msgType]
-        event.reply(`${{
+        replayEvent(event, `${{
             "user": "Your current config of \"" + cfg_name + "\"",
             "group": "Current config of \"" + cfg_name + "\" of this group",
             "discuss": "Current config of \"" + cfg_name + "\" of this discuss"
@@ -135,12 +160,12 @@ function handleCfgCmd(message, event, cfg_name, default_val, isNumber = false) {
         setUserCfg(event.sender.user_id, cfg_name, val)
     } else if (target == "group") {
         if (msgType == "group") setGroupCfg(event.group_id, cfg_name, val)
-        else return event.reply("Cannot set theme outside a group.")
+        else return replayEvent(event, "Cannot set theme outside a group.")
     } else if (target == "discuss") {
         if (msgType == "discuss") setDiscussCfg(event.discuss_id, cfg_name, val)
-        else return event.reply("Cannot set theme outside a discuss.")
+        else return replayEvent(event, "Cannot set theme outside a discuss.")
     }
-    return event.reply(`Successfully set ${{
+    return replayEvent(event, `Successfully set ${{
         "user": "your config of \"" + cfg_name + "\"",
         "group": "config of \"" + cfg_name + "\" in this group",
         "discuss": "config of \"" + cfg_name + "\" in this discuss"

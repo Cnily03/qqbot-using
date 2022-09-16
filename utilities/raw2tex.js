@@ -10,12 +10,13 @@ function raw2tex(text) {
     }
     text = ` $${text} $`
     for (let i = 0; text.replace(/\\\$/g, "").includes("$"); i++) {
-        if (i % 2) { // 第奇数个 $
+        if (i % 2) { // 第奇数个 $ - 闭合 text, 开始 equation
             text = text.replace(/([^\\])\$/, "$1}")
-        } else { // 第偶数个 $
+        } else { // 第偶数个 $ - 闭合 equation, 开始 text
             function isloop(text, k) {
                 if (k >= text.length) return false
                 if (text[k] == "$") return text[k - 1] == "\\" ? true : false
+                return true
             }
             for (let k = text.replace(/\\\$/g, "--").indexOf("$") + 1; isloop(text, k); k++) {
                 if (text[k] == "\\" && text[k + 1] == "$") continue

@@ -37,14 +37,15 @@ const html = mathjax.document('', {
 function tex2svg(equation, type = "display", color = "black") {
     const inline = type.trim() == "inline";
     // console.log(adaptor.innerHTML(html.convert(equation, { display: !inline })))
-    const svg = adaptor
+    const raw_svg = adaptor
         .innerHTML(html.convert(equation, { display: !inline }))
-        .replace(/font\-family\=\"serif\">/g, `font-family="${CN_FONT_FAMILY}">`)
+    if (/>\\text\{ \}\\begin\{array\}\{\}\\begin\{align\}/.test(raw_svg)) return false
+    const svg = raw_svg.replace(/font\-family\=\"serif\">/g, `font-family="${CN_FONT_FAMILY}">`)
         .replace(
             /(?<=<svg.+?>)/,
             `<style>*{fill: ${color};}</style>`
         );
-    return svg.includes('merror') ? svg.replace(/<rect.+?><\/rect>/, '') : svg;
+    return svg.includes('merror') ? svg.replace(/<rect.+?><\/rect>/, '') : svg
 }
 
 module.exports = tex2svg
