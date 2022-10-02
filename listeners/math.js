@@ -4,7 +4,7 @@ const oicq = require("oicq")
 const listener = new osdk.Listener()
 // const crypto = require("../utilities/crypto")
 
-const replayEvent = (_event_, _msg_, _quote_ = false) => {
+const replyEvent = (_event_, _msg_, _quote_ = false) => {
     try {
         if (_event_.group_id && _event_.group.mute_left) return // be muted
         return _event_.reply(_msg_, _quote_)
@@ -36,7 +36,7 @@ listener.event("message", function (event) { // equation
     else {
         if ((_error_2 = isEquationValid(message_backup)) > 0) message = message_backup
         else if (message.length > message_backup.length ? _error_1 : _error_2) return
-        else return replayEvent(event, SYNTAX_ERROR_MSG)
+        else return replyEvent(event, SYNTAX_ERROR_MSG)
     }
 
     const msgType = event.group_id ? "group" : (event.discuss_id ? "discuss" : "user")
@@ -58,14 +58,14 @@ listener.event("message", function (event) { // equation
 
     // 处理公式
     const equation = raw2tex(message);
-    if (equation.split("{").length != equation.split("}").length || !equation) return replayEvent(event, SYNTAX_ERROR_MSG)
+    if (equation.split("{").length != equation.split("}").length || !equation) return replyEvent(event, SYNTAX_ERROR_MSG)
     // handle picture
     if (equation.trim()) {
         const svg = tex2svg(equation, "display", theme == "light" ? "black" : "white")
-        if (svg === false) return replayEvent(event, SYNTAX_ERROR_MSG)
+        if (svg === false) return replyEvent(event, SYNTAX_ERROR_MSG)
         svg2imgbuf(svg, bg, resize_percent).then(imgbuf => {
             const image = oicq.segment.image(imgbuf)
-            replayEvent(event, image)
+            replyEvent(event, image)
         }).catch(e => console.log(e))
     }
 
@@ -75,22 +75,48 @@ listener.event("message", function (event) { // equation
     }
 }).event("message", function (event) { // command
     const message = event.toString().trim()
-    if (/^\/tex config theme( (dark|light)( (user|group|discuss))?)?$/.test(message)) {
+    if (/^\/tex config theme( (auto|dark|light)( (user|group|discuss))?)?$/.test(message)) {
         // tex theme
-        handleCfgCmd(message, event, "theme", "dark")
+        handleCfgCmd(message, event, "theme", "light")
 
-    } else if (/^\/tex config resize( [0-9\.]*( (user|group|discuss))?)?$/.test(message)) {
+    } else if (/^\/tex config resize( (auto|[0-9\.]*)( (user|group|discuss))?)?$/.test(message)) {
         // tex resize
-        handleCfgCmd(message, event, "resize", 1, true)
+        handleCfgCmd(message, event, "resize", 1, true, 0.5, 10)
 
-    } else if (/^\/tex help$/.test(message)) {
+    } else if (/^\/tex help( .+)?$/.test(message)) {
         // tex help
-        return replayEvent(event, [
-            "/tex help",
-            "/tex config theme [<theme> [target]]",
-            "/tex config resize [<number> [target]]"
-        ].join("\n"))
-    } else if (/^\/tex/.test(message)) return replayEvent(event, 'Syntax error. Please try command "/tex help".')
+        if (/^\/tex help$/.test(message)) {
+            return replyEvent(event, [
+                "/tex help [subcommand [...]]",
+                "/tex config <name> [<value> [target]]"
+            ].join("\n"))
+        } else if (message[10] && message[10] != ' ') {
+            const query_cfg = message.split("tex help ")[1].trim();
+            switch (query_cfg) {
+                case "config":
+                    return replyEvent(event, [
+                        "/tex config <name> [<value> [target]]",
+                        " - name: theme | resize",
+                        "",
+                        "Try \"/tex help config <name>\"."
+                    ].join("\n"))
+                case "config theme":
+                    return replyEvent(event, [
+                        "/tex config theme [<theme> [target]]",
+                        " - theme: auto | dark | light",
+                        " - target: user | group | discuss"
+                    ].join("\n"))
+                case "config resize":
+                    return replyEvent(event, [
+                        "/tex config resize [<number> [target]]",
+                        " - number: auto | range(0.5, 10)",
+                        " - target: user | group | discuss"
+                    ].join("\n"))
+                default:
+                    return replyEvent(event, `There is no command as "/tex ${query_cfg}".`)
+            }
+        }
+    } else if (/^\/tex/.test(message)) return replyEvent(event, 'Syntax error. Please try command "/tex help".')
 }, {
     include: {
         group: event_options.group
@@ -137,39 +163,54 @@ function setUserCfg(user_id, settings, value) {
     return value;
 }
 
-function handleCfgCmd(message, event, cfg_name, default_val, isNumber = false) {
+function handleCfgCmd(message, event, cfg_name, default_val, isNumber = false, min_number = 0, max_number = 1000000) {
     const msgType = event.group_id ? "group" : (event.discuss_id ? "discuss" : "user")
     // query
     if (message == "/tex config " + cfg_name) {
+        var useDefault = false;
+        function defaultVal() {
+            useDefault = true
+            return default_val
+        }
         const cur_cfg_val = {
-            "user": getUserCfg(event.sender.user_id, cfg_name) || default_val,
-            "group": getGroupCfg(event.group_id, cfg_name) || default_val,
-            "discuss": getDiscussCfg(event.discuss_id, cfg_name) || default_val
+            "user": getUserCfg(event.sender.user_id, cfg_name) || defaultVal(),
+            "group": getGroupCfg(event.group_id, cfg_name) || defaultVal(),
+            "discuss": getDiscussCfg(event.discuss_id, cfg_name) || defaultVal()
         }[msgType]
-        replayEvent(event, `${{
+        return replyEvent(event, `${{
             "user": "Your current config of \"" + cfg_name + "\"",
             "group": "Current config of \"" + cfg_name + "\" of this group",
             "discuss": "Current config of \"" + cfg_name + "\" of this discuss"
-        }[msgType]} is ${cur_cfg_val}`)
+        }[msgType]} is ${isNumber ? cur_cfg_val : '"' + cur_cfg_val + '"'}` + (useDefault ? " (auto default)" : "") + `.`)
     }
     // set
-    let _val = message.split(`/tex config ${cfg_name} `)[1].trim().split(" ")[0].trim() || default_val
-    const val = isNumber ? parseFloat(_val) : _val;
-    const target = (message.split(`/tex config ${cfg_name} ${val} `)[1] || "user").trim()
+    const _val = message.split(`/tex config ${cfg_name} `)[1].trim().split(" ")[0].trim() || default_val
+    var setAuto = false;
+    if (_val == "auto") setAuto = true;
+    const val = setAuto ? undefined : (isNumber ? parseFloat(_val) : _val);
+
+    if (!setAuto) {
+        if (isNumber && val < min_number)
+            return replyEvent(event, `The number ${val} is too low! The minimum value of "${cfg_name}" is ${min_number}`)
+        if (isNumber && val > max_number)
+            return replyEvent(event, `The number ${val} is too high! The maximum value of "${cfg_name}" is ${max_number}`)
+    }
+
+    const target = (message.split(`/tex config ${cfg_name} ${_val} `)[1] || "user").trim()
     if (target == "user") {
         setUserCfg(event.sender.user_id, cfg_name, val)
     } else if (target == "group") {
         if (msgType == "group") setGroupCfg(event.group_id, cfg_name, val)
-        else return replayEvent(event, "Cannot set theme outside a group.")
+        else return replyEvent(event, "Cannot set theme outside a group.")
     } else if (target == "discuss") {
         if (msgType == "discuss") setDiscussCfg(event.discuss_id, cfg_name, val)
-        else return replayEvent(event, "Cannot set theme outside a discuss.")
+        else return replyEvent(event, "Cannot set theme outside a discuss.")
     }
-    return replayEvent(event, `Successfully set ${{
+    return replyEvent(event, `Successfully set ${{
         "user": "your config of \"" + cfg_name + "\"",
         "group": "config of \"" + cfg_name + "\" in this group",
         "discuss": "config of \"" + cfg_name + "\" in this discuss"
-    }[target]} to ${typeof val == "number" ? `number ${val}` : `value "${val}"`}.`)
+    }[target]} to ` + (setAuto ? `"auto"` : `${typeof val == "number" ? `number ${val}` : `value "${val}"`} `)) + `.`
 }
 
 module.exports = listener;
