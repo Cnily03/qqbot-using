@@ -2,8 +2,8 @@ const osdk = require("oicq-sdk");
 const math_listener = require("./listeners/math")
 const CONFIG = require("./config/config")
 
-if (/[0-9]+/.test(this._account_ = process.argv.reverse()[0]))
-    CONFIG.account = parseInt(this._account_)
+if (/ test [0-9]+/.test(process.argv.join(" ")))
+    CONFIG.account = parseInt(process.argv.join(" ").match(/ test [0-9]+/)[0].split(" test ")[1])
 
 const Bot = new osdk.Bot(CONFIG.account)
 Bot.loginByToken().catch(_ => {
