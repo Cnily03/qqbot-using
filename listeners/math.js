@@ -191,9 +191,9 @@ function handleCfgCmd(message, event, cfg_name, default_val, isNumber = false, m
 
     if (!setAuto) {
         if (isNumber && val < min_number)
-            return replyEvent(event, `The number ${val} is too low! The minimum value of "${cfg_name}" is ${min_number}`)
+            return replyEvent(event, `The number ${val} is too low! The minimum value of "${cfg_name}" is ${min_number}.`)
         if (isNumber && val > max_number)
-            return replyEvent(event, `The number ${val} is too high! The maximum value of "${cfg_name}" is ${max_number}`)
+            return replyEvent(event, `The number ${val} is too high! The maximum value of "${cfg_name}" is ${max_number}.`)
     }
 
     const target = (message.split(`/tex config ${cfg_name} ${_val} `)[1] || "user").trim()
