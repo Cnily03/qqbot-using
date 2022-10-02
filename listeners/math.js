@@ -210,7 +210,7 @@ function handleCfgCmd(message, event, cfg_name, default_val, isNumber = false, m
         "user": "your config of \"" + cfg_name + "\"",
         "group": "config of \"" + cfg_name + "\" in this group",
         "discuss": "config of \"" + cfg_name + "\" in this discuss"
-    }[target]} to ` + (setAuto ? `"auto"` : `${typeof val == "number" ? `number ${val}` : `value "${val}"`} `) + `.`)
+    }[target]} to ` + (setAuto ? `"auto"` : `${typeof val == "number" ? `number ${val}` : `value "${val}"`}`) + `.`)
 }
 
 module.exports = listener;
