@@ -4,7 +4,7 @@ function replaceStr(str, char, index) {
 
 function raw2tex(text) {
     text = " " + text;
-    text = text.replace(/\r/g, "\n").replace(/([^\\])\$\$/g, "$1\n$").trim()
+    text = text.replace(/\r/g, "\n").replace(/([^\\])\$\$/g, "$1\n$\n").trim()
     while (text.includes("\n\n")) {
         text = text.replace(/\n\n/g, "\n")
     }

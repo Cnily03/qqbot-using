@@ -66,7 +66,10 @@ listener.event("message", function (event) { // equation
         svg2imgbuf(svg, bg, resize_percent).then(imgbuf => {
             const image = oicq.segment.image(imgbuf)
             replyEvent(event, image)
-        }).catch(e => console.log(e))
+        }).catch(e => {
+            if (e == 'Syntax error') replyEvent(event, SYNTAX_ERROR_MSG)
+            else console.log(e)
+        })
     }
 
 }, {
@@ -81,7 +84,7 @@ listener.event("message", function (event) { // equation
 
     } else if (/^\/tex config resize( (auto|[0-9\.]*)( (user|group|discuss))?)?$/.test(message)) {
         // tex resize
-        handleCfgCmd(message, event, "resize", 1, true, 0.5, 10)
+        handleCfgCmd(message, event, "resize", 1, true, 0.5, 7)
 
     } else if (/^\/tex help( .+)?$/.test(message)) {
         // tex help
@@ -109,7 +112,7 @@ listener.event("message", function (event) { // equation
                 case "config resize":
                     return replyEvent(event, [
                         "/tex config resize [<number> [target]]",
-                        " - number: auto | range(0.5, 10)",
+                        " - number: auto | range(0.5, 7)",
                         " - target: user | group | discuss"
                     ].join("\n"))
                 default:
