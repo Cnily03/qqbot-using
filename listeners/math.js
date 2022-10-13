@@ -26,7 +26,7 @@ listener.event("message", function (event) { // equation
 
     function isEquationValid(text) {
         const dolloar_count = text.replace(/\\\$/g, "").split("$").length - 1
-        if (!text.replace(/\$+/g, "").includes("$")) return -1
+        if (!text.replace(/\$+/, "").includes("$")) return -1
         if (dolloar_count < 2) return -1 // not equation
         if (!dolloar_count % 2) return 0 // syntax error
         return 1;
